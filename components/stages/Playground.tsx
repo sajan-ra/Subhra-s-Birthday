@@ -1,3 +1,4 @@
+
 /// <reference lib="dom" />
 import React, { useState, useEffect, useMemo } from 'react';
 import { music, sfx } from '../../services/audioService';
@@ -181,8 +182,8 @@ const Playground: React.FC<PlaygroundProps> = ({ onComplete, userName }) => {
   const [guests, setGuests] = useState<{name: string, color: string, isUser: boolean, isBirthdayGirl?: boolean}[]>([]);
 
   useEffect(() => {
-    // Generate crowd
-    const fakeNames = ["Alice", "Bob", "Charlie", "Diana", "Ethan", "Fiona", "George", "Hannah"];
+    // Generate crowd with specific names
+    const fakeNames = ["Tony", "Totaa", "Maverick", "Racoon", "Prithvi", "Miffy", "Dhaty"];
     const colors = ["#ef4444", "#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", "#06b6d4", "#f43f5e"];
     
     // Prepare User
