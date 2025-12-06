@@ -96,7 +96,7 @@ const AccessGate: React.FC<AccessGateProps> = ({ onUnlock }) => {
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
           {/* Identity Input */}
           <div>
-            <label className="block text-xs font-bold text-green-700 mb-1 tracking-widest">>> AGENT_ID (NAME/EMAIL)</label>
+            <label className="block text-xs font-bold text-green-700 mb-1 tracking-widest">&gt;&gt; AGENT_ID (NAME/EMAIL)</label>
             <div className="relative">
               <span className={`absolute left-4 top-1/2 -translate-y-1/2 ${error ? 'text-red-700' : 'text-green-700'}`}>{'>'}</span>
               <input
@@ -113,7 +113,7 @@ const AccessGate: React.FC<AccessGateProps> = ({ onUnlock }) => {
 
           {/* Passcode Input */}
           <div>
-            <label className="block text-xs font-bold text-green-700 mb-1 tracking-widest">>> SECURITY_CODE</label>
+            <label className="block text-xs font-bold text-green-700 mb-1 tracking-widest">&gt;&gt; SECURITY_CODE</label>
             <div className="relative">
               <span className={`absolute left-4 top-1/2 -translate-y-1/2 ${error ? 'text-red-700' : 'text-green-700'}`}>{'>'}</span>
               <input

@@ -6,6 +6,7 @@ import Playground from './components/stages/Playground';
 import Cake3D from './components/stages/Cake3D';
 import AccessGate from './components/stages/AccessGate';
 import { AppStage } from './types';
+import { playBirthdaySong } from './services/audioService';
 
 const App: React.FC = () => {
   // Start directly at Access Code
@@ -26,6 +27,8 @@ const App: React.FC = () => {
           setIsAdmin(admin);
           setUserName(name);
           setStage(AppStage.LANDING);
+          // Play song immediately after unlock
+          playBirthdaySong();
         }} />;
       case AppStage.LANDING:
         return <Landing onComplete={() => setStage(AppStage.EGG_REVEAL)} />;

@@ -51,6 +51,64 @@ export const playNoise = (duration: number) => {
   noise.start();
 };
 
+export const playBirthdaySong = () => {
+  const ctx = getAudioCtx();
+  if (ctx.state === 'suspended') ctx.resume();
+  
+  const notes = [
+    { f: 261.63, d: 0.3 }, // C4 Happy
+    { f: 261.63, d: 0.3 }, // C4 Birth
+    { f: 293.66, d: 0.6 }, // D4 Day
+    { f: 261.63, d: 0.6 }, // C4 To
+    { f: 349.23, d: 0.6 }, // F4 You
+    { f: 329.63, d: 1.2 }, // E4
+
+    { f: 261.63, d: 0.3 }, // C4 Happy
+    { f: 261.63, d: 0.3 }, // C4 Birth
+    { f: 293.66, d: 0.6 }, // D4 Day
+    { f: 261.63, d: 0.6 }, // C4 To
+    { f: 392.00, d: 0.6 }, // G4 You
+    { f: 349.23, d: 1.2 }, // F4
+
+    { f: 261.63, d: 0.3 }, // C4 Happy
+    { f: 261.63, d: 0.3 }, // C4 Birth
+    { f: 523.25, d: 0.6 }, // C5 Day
+    { f: 440.00, d: 0.6 }, // A4 Dear
+    { f: 349.23, d: 0.6 }, // F4 Name
+    { f: 329.63, d: 0.6 }, // E4
+    { f: 293.66, d: 1.2 }, // D4
+
+    { f: 466.16, d: 0.3 }, // Bb4 Happy
+    { f: 466.16, d: 0.3 }, // Bb4 Birth
+    { f: 440.00, d: 0.6 }, // A4 Day
+    { f: 349.23, d: 0.6 }, // F4 To
+    { f: 392.00, d: 0.6 }, // G4 You
+    { f: 349.23, d: 1.2 }, // F4
+  ];
+
+  let currentTime = ctx.currentTime;
+  notes.forEach(note => {
+    // Play slightly customized tone for pleasant sound
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(note.f, currentTime);
+    
+    gain.gain.setValueAtTime(0, currentTime);
+    gain.gain.linearRampToValueAtTime(0.1, currentTime + 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.001, currentTime + note.d * 0.9);
+    
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    
+    osc.start(currentTime);
+    osc.stop(currentTime + note.d);
+    
+    currentTime += note.d;
+  });
+};
+
 // Music Sequencer
 let beatInterval: number | null = null;
 let noteIndex = 0;
