@@ -99,6 +99,16 @@ const Cake3D: React.FC<Cake3DProps> = ({ onRestart, userName }) => {
       {/* The Cake SVG */}
       <div className="relative w-[300px] h-[300px] md:w-[400px] md:h-[400px] transition-transform hover:scale-105">
         <svg viewBox="0 0 400 400" className="w-full h-full drop-shadow-2xl">
+          <defs>
+            <filter id="flameGlow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+              <feMerge>
+                <feMergeNode in="coloredBlur"/>
+                <feMergeNode in="SourceGraphic"/>
+              </feMerge>
+            </filter>
+          </defs>
+
           {/* Plate */}
           <circle cx="200" cy="200" r="190" fill="#f8fafc" stroke="#e2e8f0" strokeWidth="4" />
           <circle cx="200" cy="200" r="180" fill="#f1f5f9" opacity="0.5" />
@@ -125,14 +135,23 @@ const Cake3D: React.FC<Cake3DProps> = ({ onRestart, userName }) => {
                     <rect x="-4" y="-20" width="8" height="30" fill="#fce7f3" stroke="#db2777" strokeWidth="1" />
                     <rect x="-4" y="-20" width="8" height="5" fill="#db2777" />
                     <line x1="0" y1="-20" x2="0" y2="-25" stroke="#333" strokeWidth="2" />
-                    {/* Flame */}
+                    
+                    {/* Flame with Glow Effect */}
                     {!candlesBlown && (
-                      <path 
-                        d="M0,-25 Q-5,-35 0,-45 Q5,-35 0,-25" 
-                        fill="#fbbf24" 
-                        className="origin-bottom animate-pulse"
-                        style={{ transform: `scale(${flameScale})` }}
-                      />
+                      <g className="origin-bottom animate-pulse" style={{ transform: `scale(${flameScale})` }}>
+                         {/* Outer Glow Halo */}
+                         <circle cx="0" cy="-35" r="15" fill="#f59e0b" opacity="0.4" filter="url(#flameGlow)" />
+                         <circle cx="0" cy="-35" r="8" fill="#fbbf24" opacity="0.6" filter="url(#flameGlow)" />
+                         
+                         {/* Main Flame Core */}
+                         <path 
+                           d="M0,-25 Q-6,-40 0,-50 Q6,-40 0,-25" 
+                           fill="#fff" 
+                           stroke="#f59e0b" 
+                           strokeWidth="1"
+                           filter="url(#flameGlow)"
+                         />
+                      </g>
                     )}
                   </g>
                 </g>
