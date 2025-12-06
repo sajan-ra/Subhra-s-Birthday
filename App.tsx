@@ -4,6 +4,7 @@ import Landing from './components/stages/Landing';
 import EggReveal from './components/stages/EggReveal';
 import Playground from './components/stages/Playground';
 import Cake3D from './components/stages/Cake3D';
+import AccessGate from './components/stages/AccessGate';
 import { AppStage } from './types';
 import { playNoise } from './services/audioService';
 
@@ -13,7 +14,8 @@ const App: React.FC = () => {
   // Preloading simulation
   useEffect(() => {
     const timer = setTimeout(() => {
-      setStage(AppStage.LANDING);
+      // Transition to Access Gate instead of Landing
+      setStage(AppStage.ACCESS_CODE);
     }, 2000);
     return () => clearTimeout(timer);
   }, []);
@@ -22,11 +24,13 @@ const App: React.FC = () => {
     switch (stage) {
       case AppStage.LOADING:
         return (
-          <div className="flex flex-col items-center justify-center h-screen bg-pink-100">
-             <div className="text-6xl animate-spin mb-4">🧁</div>
-             <h1 className="text-2xl text-pink-600 font-bold">Preparing Birthday Magic...</h1>
+          <div className="flex flex-col items-center justify-center h-screen bg-black">
+             <div className="text-6xl animate-pulse mb-4">🔒</div>
+             <h1 className="text-xl text-green-500 font-mono">INITIALIZING SECURITY PROTOCOLS...</h1>
           </div>
         );
+      case AppStage.ACCESS_CODE:
+        return <AccessGate onUnlock={() => setStage(AppStage.LANDING)} />;
       case AppStage.LANDING:
         return <Landing onComplete={() => setStage(AppStage.EGG_REVEAL)} />;
       case AppStage.EGG_REVEAL:
@@ -34,7 +38,7 @@ const App: React.FC = () => {
       case AppStage.PLAYGROUND:
         return <Playground onComplete={() => setStage(AppStage.CAKE)} />;
       case AppStage.CAKE:
-        return <Cake3D onRestart={() => setStage(AppStage.LANDING)} />;
+        return <Cake3D onRestart={() => setStage(AppStage.ACCESS_CODE)} />;
       default:
         return null;
     }
