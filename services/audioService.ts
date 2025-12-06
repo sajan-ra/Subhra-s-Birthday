@@ -3,11 +3,16 @@
 
 let audioCtx: AudioContext | null = null;
 
-const getAudioCtx = () => {
+const getAudioCtx = (): AudioContext => {
   if (!audioCtx) {
-    audioCtx = new ((window as any).AudioContext || (window as any).webkitAudioContext)();
+    const AudioContextClass = (window as any).AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContextClass) {
+      throw new Error("AudioContext not supported");
+    }
+    audioCtx = new AudioContextClass();
   }
-  return audioCtx;
+  // We guarantee audioCtx is not null here
+  return audioCtx!;
 };
 
 export const playTone = (freq: number, type: OscillatorType, duration: number, delay = 0) => {

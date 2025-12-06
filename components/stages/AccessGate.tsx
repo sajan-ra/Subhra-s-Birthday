@@ -98,7 +98,7 @@ const AccessGate: React.FC<AccessGateProps> = ({ onUnlock }) => {
           <div>
             <label className="block text-xs font-bold text-green-700 mb-1 tracking-widest">&gt;&gt; AGENT_ID (NAME/EMAIL)</label>
             <div className="relative">
-              <span className={`absolute left-4 top-1/2 -translate-y-1/2 ${error ? 'text-red-700' : 'text-green-700'}`}>{'>'}</span>
+              <span className={`absolute left-4 top-1/2 -translate-y-1/2 ${error ? 'text-red-700' : 'text-green-700'}`}>&gt;</span>
               <input
                 type="text"
                 value={identity}
@@ -115,7 +115,7 @@ const AccessGate: React.FC<AccessGateProps> = ({ onUnlock }) => {
           <div>
             <label className="block text-xs font-bold text-green-700 mb-1 tracking-widest">&gt;&gt; SECURITY_CODE</label>
             <div className="relative">
-              <span className={`absolute left-4 top-1/2 -translate-y-1/2 ${error ? 'text-red-700' : 'text-green-700'}`}>{'>'}</span>
+              <span className={`absolute left-4 top-1/2 -translate-y-1/2 ${error ? 'text-red-700' : 'text-green-700'}`}>&gt;</span>
               <input
                 type="text"
                 value={code}
