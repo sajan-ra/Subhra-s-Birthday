@@ -94,7 +94,7 @@ const EggReveal: React.FC<EggRevealProps> = ({ onComplete }) => {
       <div ref={contentRef} className="absolute inset-0 flex flex-col items-center justify-center opacity-0 pointer-events-none data-[visible=true]:pointer-events-auto" data-visible={isRevealed}>
         <div className="bg-white p-6 rounded-3xl shadow-2xl transform rotate-2 flex flex-col items-center max-w-sm border-4 border-pink-200">
           <img 
-            src="https://images.unsplash.com/photo-1595152452543-e5cca283f547?q=80&w=500&auto=format&fit=crop" 
+            src="https://iili.io/fTiUgOg.png" 
             alt="Birthday Girl" 
             className="w-56 h-56 rounded-full border-4 border-pink-500 object-cover mb-4 shadow-inner"
           />
