@@ -9,18 +9,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@react-three/cannon": "^6.6.0",
-    "@react-three/drei": "^9.105.0",
-    "@react-three/fiber": "^8.16.0",
     "gsap": "^3.12.5",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "three": "^0.162.0"
+    "react-dom": "^18.2.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.64",
     "@types/react-dom": "^18.2.21",
-    "@types/three": "^0.162.0",
     "@vitejs/plugin-react": "^4.2.1",
     "typescript": "^5.4.2",
     "vite": "^5.1.6"

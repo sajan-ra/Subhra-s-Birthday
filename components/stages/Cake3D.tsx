@@ -1,140 +1,20 @@
 /// <reference lib="dom" />
 import React, { useState, useEffect } from 'react';
-import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Stars, Sparkles, Text, Float, Html } from '@react-three/drei';
-import { Physics, useBox, usePlane } from '@react-three/cannon';
 import { sfx } from '../../services/audioService';
 import { Button } from '../Button';
 
-// Augment JSX namespace for Three.js elements and all other elements to fix missing types
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      [elemName: string]: any;
-    }
-  }
-}
-
 interface Cake3DProps {
   onRestart: () => void;
+  userName?: string;
 }
 
-const Floor = () => {
-  const [ref] = usePlane(() => ({ 
-    rotation: [-Math.PI / 2, 0, 0], 
-    position: [0, -2, 0],
-    type: 'Static',
-    material: { friction: 0.8 } 
-  }));
-  return (
-    <mesh ref={ref as any} receiveShadow>
-      <planeGeometry args={[50, 50]} />
-      <meshStandardMaterial color="#fdf2f8" />
-    </mesh>
-  );
-};
-
-const Candle = ({ position, blownOut }: { position: [number, number, number], blownOut: boolean }) => {
-  return (
-    <group position={position}>
-      <mesh position={[0, 0.2, 0]}>
-         <cylinderGeometry args={[0.04, 0.04, 0.4, 8]} />
-         <meshStandardMaterial color="#fce7f3" />
-      </mesh>
-      <mesh position={[0, 0.4, 0]}>
-         <cylinderGeometry args={[0.01, 0.01, 0.1, 4]} />
-         <meshStandardMaterial color="#333" />
-      </mesh>
-      {!blownOut && (
-        <mesh position={[0, 0.45, 0]}>
-          <sphereGeometry args={[0.08, 8, 8]} />
-          <meshStandardMaterial color="orange" emissive="orange" emissiveIntensity={2} />
-          <pointLight distance={3} intensity={1} color="#ffaa00" />
-        </mesh>
-      )}
-    </group>
-  );
-};
-
-const CakeSlice = ({ 
-  index, 
-  total, 
-  onInteract, 
-  candlesBlown 
-}: { 
-  index: number; 
-  total: number; 
-  onInteract: () => void; 
-  candlesBlown: boolean;
-  key?: any; 
-}) => {
-  const angleStep = (Math.PI * 2) / total;
-  const angle = index * angleStep;
-  const radius = 1;
-  // Offset from center to allow clean separation
-  const x = Math.sin(angle + angleStep/2) * 0.1;
-  const z = Math.cos(angle + angleStep/2) * 0.1;
-
-  const [isDetached, setIsDetached] = useState(false);
-  
-  // Calculate physics box size/rotation roughly matching the wedge
-  const [ref, api] = useBox(() => ({
-    mass: isDetached ? 1 : 0,
-    args: [0.6, 0.8, 1], // Approximation of wedge
-    position: [x, -0.5, z],
-    rotation: [0, angle + angleStep/2, 0],
-  }));
-
-  const handleClick = (e: any) => {
-    if (!candlesBlown) return;
-    e.stopPropagation();
-    
-    if (!isDetached) {
-      setIsDetached(true);
-      sfx.slice();
-      onInteract();
-      
-      // Eject slice
-      const ejectForce = 4;
-      api.applyImpulse(
-        [Math.sin(angle + angleStep/2) * ejectForce, 3, Math.cos(angle + angleStep/2) * ejectForce],
-        [0, 0, 0]
-      );
-      api.applyTorque([Math.random(), Math.random(), Math.random()]);
-    }
-  };
-
-  return (
-    <group ref={ref as any} onClick={handleClick}>
-      <group rotation={[0, -angleStep/2, 0]}> {/* Adjust visual to align with physics box rotation */}
-         <mesh castShadow receiveShadow>
-            <cylinderGeometry 
-              args={[radius, radius, 0.8, 32, 1, false, 0, angleStep]} 
-            />
-            <meshStandardMaterial color={index % 2 === 0 ? "#ec4899" : "#f472b6"} />
-         </mesh>
-         <mesh position={[0, 0.41, 0]}>
-            <cylinderGeometry 
-              args={[radius * 0.95, radius * 0.95, 0.05, 32, 1, false, 0, angleStep]} 
-            />
-            <meshStandardMaterial color="white" />
-         </mesh>
-         
-         {/* Candle centered on wedge arc */}
-         <Candle 
-           position={[Math.sin(angleStep/2)*0.6, 0.4, Math.cos(angleStep/2)*0.6]} 
-           blownOut={candlesBlown} 
-         />
-      </group>
-    </group>
-  );
-};
-
-const Scene = ({ onRestart }: { onRestart: () => void }) => {
+const Cake3D: React.FC<Cake3DProps> = ({ onRestart, userName }) => {
   const [candlesBlown, setCandlesBlown] = useState(false);
-  const [volume, setVolume] = useState(0);
+  const [slices, setSlices] = useState(Array(8).fill(true)); // 8 visible slices
+  const [flameScale, setFlameScale] = useState(1);
 
   useEffect(() => {
+    // Microphone interaction to blow out candles
     let audioContext: AudioContext;
     let analyser: AnalyserNode;
     let micStream: MediaStream;
@@ -142,9 +22,7 @@ const Scene = ({ onRestart }: { onRestart: () => void }) => {
 
     const initMic = async () => {
       try {
-        // Fix: Use window.navigator to ensure access in all contexts
         micStream = await window.navigator.mediaDevices.getUserMedia({ audio: true });
-        // Fix: Cast window to any for webkit prefix support
         audioContext = new ((window as any).AudioContext || (window as any).webkitAudioContext)();
         const source = audioContext.createMediaStreamSource(micStream);
         analyser = audioContext.createAnalyser();
@@ -154,13 +32,21 @@ const Scene = ({ onRestart }: { onRestart: () => void }) => {
         const buffer = new Uint8Array(analyser.frequencyBinCount);
         
         const tick = () => {
+          if (!analyser) return;
           analyser.getByteFrequencyData(buffer);
           const avg = buffer.reduce((a, b) => a + b, 0) / buffer.length;
-          setVolume(avg);
           
-          if (avg > 30 && !candlesBlown) { // Threshold
+          // Visual feedback for blowing
+          if (avg > 10) {
+             setFlameScale(Math.max(0.2, 1 - (avg / 50)));
+          } else {
+             setFlameScale(prev => Math.min(1, prev + 0.1));
+          }
+
+          if (avg > 40 && !candlesBlown) { 
              setCandlesBlown(true);
              sfx.cheer();
+             sfx.pop();
           }
           rafId = requestAnimationFrame(tick);
         };
@@ -169,71 +55,98 @@ const Scene = ({ onRestart }: { onRestart: () => void }) => {
         console.log("Mic not available", e);
       }
     };
-    initMic();
+
+    if (!candlesBlown) {
+      initMic();
+    }
 
     return () => {
       if (rafId) cancelAnimationFrame(rafId);
-      if (audioContext) audioContext.close();
-      // Fix: cast to any to ensure getTracks is accessible even if type definition is old
-      if (micStream) (micStream as any).getTracks().forEach((t: any) => t.stop());
+      if (audioContext && audioContext.state !== 'closed') audioContext.close();
+      if (micStream) micStream.getTracks().forEach(t => t.stop());
     };
   }, [candlesBlown]);
 
-  return (
-    <>
-      <OrbitControls minPolarAngle={0} maxPolarAngle={Math.PI / 2.2} />
-      <ambientLight intensity={0.6} />
-      <spotLight position={[5, 10, 5]} angle={0.5} penumbra={1} intensity={1} castShadow />
-      <pointLight position={[-5, 5, -5]} intensity={0.5} />
-      <Stars count={2000} factor={4} fade />
-      
-      {candlesBlown && <Sparkles count={200} scale={12} size={6} speed={0.4} opacity={1} color="#FFD700" position={[0, 2, 0]} />}
+  const eatSlice = (index: number) => {
+    if (!candlesBlown) return;
+    if (slices[index]) {
+      const newSlices = [...slices];
+      newSlices[index] = false;
+      setSlices(newSlices);
+      sfx.slice();
+    }
+  };
 
-      <Physics>
-        <Floor />
-        {Array.from({ length: 8 }).map((_, i) => (
-          <CakeSlice 
-            key={i} 
-            index={i} 
-            total={8} 
-            candlesBlown={candlesBlown} 
-            onInteract={() => {}} 
-          />
+  return (
+    <div className="h-full w-full bg-slate-900 flex flex-col items-center justify-center relative overflow-hidden">
+      {/* Background Decor */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {Array.from({ length: 50 }).map((_, i) => (
+          <div key={i} className="absolute w-2 h-2 bg-white rounded-full opacity-20 animate-pulse" 
+               style={{ top: `${Math.random()*100}%`, left: `${Math.random()*100}%`, animationDelay: `${Math.random()*5}s` }}></div>
         ))}
-      </Physics>
-
-      <Float speed={2} rotationIntensity={0.1} floatIntensity={0.5} position={[0, 2.5, 0]}>
-         <Text
-           font="https://fonts.gstatic.com/s/fredokaone/v13/k3kUo8kEI-tA1RRcTZGmTlHGCac.woff"
-           fontSize={0.6}
-           color="#ec4899"
-           anchorX="center"
-           anchorY="middle"
-           outlineWidth={0.02}
-           outlineColor="#ffffff"
-         >
-           {!candlesBlown ? (volume > 10 ? "BLOW HARDER!" : "BLOW OUT THE CANDLES!") : "HAPPY BIRTHDAY!"}
-         </Text>
-      </Float>
-    </>
-  );
-};
-
-const Cake3D: React.FC<Cake3DProps> = ({ onRestart }) => {
-  return (
-    <div className="h-full w-full relative bg-gradient-to-b from-slate-900 to-purple-900">
-      <Canvas shadows camera={{ position: [0, 4, 6], fov: 45 }}>
-        <Scene onRestart={onRestart} />
-      </Canvas>
-      
-      <div className="absolute bottom-6 left-0 right-0 flex justify-center pointer-events-none">
-        <div className="bg-white/90 backdrop-blur p-4 rounded-2xl shadow-xl pointer-events-auto text-center max-w-sm mx-4">
-          <p className="text-sm font-bold text-gray-700 mb-3">
-            🎤 Blow into your microphone to extinguish the candles, then click slices to eat the cake!
-          </p>
-          <Button onClick={onRestart} variant="primary">Start Over ↺</Button>
-        </div>
       </div>
+
+      <div className="z-10 text-center mb-8">
+        <h2 className="text-4xl md:text-6xl font-bold text-pink-500 font-comic drop-shadow-[0_4px_0_rgba(0,0,0,0.5)]">
+          {candlesBlown ? `HAPPY BIRTHDAY ${userName?.toUpperCase() || 'FRIEND'}!` : "MAKE A WISH!"}
+        </h2>
+        <p className="text-pink-200 mt-2 text-xl">
+          {candlesBlown ? "Click the cake to eat it!" : "Blow into your mic to put out the candles!"}
+        </p>
+      </div>
+
+      {/* The Cake SVG */}
+      <div className="relative w-[300px] h-[300px] md:w-[400px] md:h-[400px] transition-transform hover:scale-105">
+        <svg viewBox="0 0 400 400" className="w-full h-full drop-shadow-2xl">
+          {/* Plate */}
+          <circle cx="200" cy="200" r="190" fill="#f8fafc" stroke="#e2e8f0" strokeWidth="4" />
+          <circle cx="200" cy="200" r="180" fill="#f1f5f9" opacity="0.5" />
+
+          {/* Slices */}
+          <g transform="translate(200, 200)">
+            {slices.map((exists, i) => {
+              if (!exists) return null;
+              const angle = (360 / 8) * i;
+              const rotation = `rotate(${angle})`;
+              return (
+                <g key={i} transform={rotation} onClick={() => eatSlice(i)} className={`cursor-pointer transition-opacity ${candlesBlown ? 'hover:opacity-80' : ''}`}>
+                  {/* Slice Wedge */}
+                  <path d="M0,0 L-70,-140 A156,156 0 0,1 70,-140 Z" fill="#fcd34d" stroke="#b45309" strokeWidth="2" />
+                  {/* Frosting Top */}
+                  <path d="M-60,-120 A134,134 0 0,1 60,-120" stroke="#ec4899" strokeWidth="20" fill="none" strokeLinecap="round" />
+                  {/* Sprinkles */}
+                  <circle cx="0" cy="-100" r="4" fill="#3b82f6" />
+                  <circle cx="-20" cy="-110" r="4" fill="#ef4444" />
+                  <circle cx="20" cy="-110" r="4" fill="#22c55e" />
+                  
+                  {/* Candle (Only visible if not blown out, or maybe keep candle body but no flame) */}
+                  <g transform="translate(0, -90)">
+                    <rect x="-4" y="-20" width="8" height="30" fill="#fce7f3" stroke="#db2777" strokeWidth="1" />
+                    <rect x="-4" y="-20" width="8" height="5" fill="#db2777" />
+                    <line x1="0" y1="-20" x2="0" y2="-25" stroke="#333" strokeWidth="2" />
+                    {/* Flame */}
+                    {!candlesBlown && (
+                      <path 
+                        d="M0,-25 Q-5,-35 0,-45 Q5,-35 0,-25" 
+                        fill="#fbbf24" 
+                        className="origin-bottom animate-pulse"
+                        style={{ transform: `scale(${flameScale})` }}
+                      />
+                    )}
+                  </g>
+                </g>
+              );
+            })}
+          </g>
+        </svg>
+      </div>
+
+      {candlesBlown && (
+        <div className="mt-12 z-20">
+          <Button onClick={onRestart} variant="primary">Play Again ↺</Button>
+        </div>
+      )}
     </div>
   );
 };

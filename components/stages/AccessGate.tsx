@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { sfx } from '../../services/audioService';
 
 interface AccessGateProps {
-  onUnlock: () => void;
+  onUnlock: (isAdmin: boolean, name: string) => void;
 }
 
 const AccessGate: React.FC<AccessGateProps> = ({ onUnlock }) => {
@@ -37,11 +37,22 @@ const AccessGate: React.FC<AccessGateProps> = ({ onUnlock }) => {
       return;
     }
 
+    const normalizedId = identity.trim().toLowerCase();
+    const isAdminUser = normalizedId === 'subh';
+
     // Passcode check
     if (code.trim().toUpperCase() === 'CHICKEN') {
       setSuccess(true);
-      sfx.cheer(); 
-      setTimeout(onUnlock, 1500); 
+      
+      if (isAdminUser) {
+        sfx.cheer(); // You might want a specific admin sound later
+        // Visual feedback for admin
+        setDisplayedText(prev => prev + "\n\n> ROOT USER DETECTED.\n> ADMIN PRIVILEGES: GRANTED.");
+      } else {
+        sfx.cheer(); 
+      }
+
+      setTimeout(() => onUnlock(isAdminUser, identity.trim()), 1500); 
     } else {
       setError(true);
       sfx.explosion();
