@@ -1,32 +1,23 @@
 /// <reference lib="dom" />
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Landing from './components/stages/Landing';
 import EggReveal from './components/stages/EggReveal';
 import Playground from './components/stages/Playground';
 import Cake3D from './components/stages/Cake3D';
 import AccessGate from './components/stages/AccessGate';
 import { AppStage } from './types';
-import { playNoise } from './services/audioService';
 
 const App: React.FC = () => {
-  const [stage, setStage] = useState<AppStage>(AppStage.LOADING);
-
-  // Preloading simulation
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      // Transition to Access Gate instead of Landing
-      setStage(AppStage.ACCESS_CODE);
-    }, 2000);
-    return () => clearTimeout(timer);
-  }, []);
+  // Start directly at Access Code, skipping the fake loading screen
+  const [stage, setStage] = useState<AppStage>(AppStage.ACCESS_CODE);
 
   const renderStage = () => {
     switch (stage) {
       case AppStage.LOADING:
+        // Fallback if needed, but not used in initial flow anymore
         return (
           <div className="flex flex-col items-center justify-center h-screen bg-black">
              <div className="text-6xl animate-pulse mb-4">🔒</div>
-             <h1 className="text-xl text-green-500 font-mono">INITIALIZING SECURITY PROTOCOLS...</h1>
           </div>
         );
       case AppStage.ACCESS_CODE:

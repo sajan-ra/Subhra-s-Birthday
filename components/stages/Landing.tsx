@@ -1,293 +1,161 @@
-import React, { useRef, useState, useLayoutEffect, Suspense } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
-import { Sky, ContactShadows, Float, Text, PerspectiveCamera, Html } from '@react-three/drei';
+import React, { useState, useEffect, useRef } from 'react';
 import gsap from 'gsap';
-import * as THREE from 'three';
 import { sfx } from '../../services/audioService';
 
 interface LandingProps {
   onComplete: () => void;
 }
 
-// A composed 3D Chicken using primitives to look "Toy Realistic"
-const Chicken3D = ({ onClick, isFlying }: { onClick: () => void, isFlying: boolean }) => {
-  const group = useRef<THREE.Group>(null);
-  const wingsRef = useRef<THREE.Group>(null);
+interface ChickenData {
+  id: number;
+  x: number;
+  y: number;
+  isWinner: boolean;
+  status: 'idle' | 'clicked';
+  surpriseType: 'joke' | 'ghost' | 'roast' | 'poof' | 'winner';
+  msg?: string;
+}
 
-  useLayoutEffect(() => {
-    if (isFlying && group.current && wingsRef.current) {
-      // Fly away animation
-      const tl = gsap.timeline();
+const JOKES = [
+  "Not me!",
+  "Try again!",
+  "Nope!",
+  "I'm a duck.",
+  "Wrong bird!",
+  "Cluck off!",
+  "Am I the one?",
+  "404 Egg Not Found"
+];
+
+const Landing: React.FC<LandingProps> = ({ onComplete }) => {
+  const [chickens, setChickens] = useState<ChickenData[]>([]);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [foundWinner, setFoundWinner] = useState(false);
+
+  useEffect(() => {
+    // Generate 20 random chickens
+    const newChickens: ChickenData[] = [];
+    const winnerIndex = Math.floor(Math.random() * 20);
+
+    for (let i = 0; i < 20; i++) {
+      const isWinner = i === winnerIndex;
+      let surpriseType: ChickenData['surpriseType'] = 'poof';
       
-      // 1. Squat
-      tl.to(group.current.scale, {
-        y: 0.8,
-        x: 1.1,
-        z: 1.1,
-        duration: 0.2,
-        ease: "power1.inOut",
-        yoyo: true,
-        repeat: 1
-      })
-      // 2. Jump and Fly
-      .to(group.current.position, {
-        y: 10,
-        x: 5,
-        z: -5,
-        duration: 1.5,
-        ease: "power2.in",
-        delay: 0.1
-      })
-      .to(group.current.rotation, {
-        y: Math.PI / 4,
-        x: -Math.PI / 6,
-        duration: 1.5,
-      }, "<");
+      if (isWinner) {
+        surpriseType = 'winner';
+      } else {
+        const rand = Math.random();
+        if (rand < 0.4) surpriseType = 'joke';
+        else if (rand < 0.6) surpriseType = 'roast';
+        else if (rand < 0.8) surpriseType = 'ghost';
+        else surpriseType = 'poof';
+      }
 
-      // Flap wings frantically
-      gsap.to(wingsRef.current.rotation, {
-        x: Math.PI / 2,
-        duration: 0.1,
-        yoyo: true,
-        repeat: 15
+      newChickens.push({
+        id: i,
+        // Keep them somewhat away from edges (10% to 90%)
+        x: Math.random() * 80 + 10, 
+        y: Math.random() * 80 + 10,
+        isWinner,
+        status: 'idle',
+        surpriseType,
+        msg: surpriseType === 'joke' ? JOKES[Math.floor(Math.random() * JOKES.length)] : undefined
       });
     }
-  }, [isFlying]);
+    setChickens(newChickens);
+  }, []);
 
-  useFrame((state) => {
-    if (!isFlying && group.current) {
-      // Idle breathing
-      group.current.position.y = Math.sin(state.clock.elapsedTime * 2) * 0.05 + 0.9; // Base height 0.9
+  const handleChickenClick = (id: number) => {
+    if (foundWinner) return;
+
+    setChickens(prev => prev.map(c => {
+      if (c.id !== id) return c;
+      return { ...c, status: 'clicked' };
+    }));
+
+    const chicken = chickens.find(c => c.id === id);
+    if (!chicken) return;
+
+    if (chicken.isWinner) {
+      // Winner Logic
+      setFoundWinner(true);
+      sfx.cheer();
       
-      // Idle wing twitch
-      if (wingsRef.current) {
-          wingsRef.current.rotation.z = Math.sin(state.clock.elapsedTime * 4) * 0.05;
+      // Animate Winner
+      const el = document.getElementById(`chicken-${id}`);
+      if (el) {
+        const tl = gsap.timeline();
+        // Jump up
+        tl.to(el, { y: -100, scale: 1.5, duration: 0.5, ease: "back.out(1.7)" })
+          // Lay egg (visualized by a new element appearing below)
+          .call(() => {
+             sfx.pop();
+             const egg = document.createElement('div');
+             egg.innerText = '🥚';
+             egg.style.position = 'absolute';
+             egg.style.left = '50%';
+             egg.style.top = '100%';
+             egg.style.transform = 'translate(-50%, 0)';
+             egg.style.fontSize = '40px';
+             el.appendChild(egg);
+             
+             gsap.from(egg, { y: -20, opacity: 0, duration: 0.3 });
+          })
+          // Pause then complete
+          .to({}, { duration: 1.5 })
+          .call(onComplete);
+      }
+    } else {
+      // Decoy Logic
+      sfx.cluck();
+      
+      if (chicken.surpriseType === 'roast') {
+         // Change visual to roasted chicken
+         sfx.slice();
+      } else if (chicken.surpriseType === 'ghost') {
+         sfx.slice(); // quiet sound
       }
     }
-  });
-
-  return (
-    <group ref={group} onClick={(e) => { e.stopPropagation(); onClick(); }} position={[0, 0.9, 0]}>
-      {/* Body Main */}
-      <mesh castShadow receiveShadow position={[0, 0, 0]}>
-        <sphereGeometry args={[0.7, 32, 32]} />
-        <meshStandardMaterial color="#ffffff" roughness={0.5} />
-      </mesh>
-      
-      {/* Chest puffs for realism */}
-      <mesh position={[0, -0.2, 0.4]} rotation={[0.5, 0, 0]}>
-        <sphereGeometry args={[0.4, 32, 32]} />
-        <meshStandardMaterial color="#ffffff" roughness={0.5} />
-      </mesh>
-
-      {/* Tail Feathers */}
-      <group position={[0, 0.2, -0.6]} rotation={[-0.5, 0, 0]}>
-        <mesh castShadow position={[0, 0, 0]}>
-            <coneGeometry args={[0.4, 0.8, 32]} />
-            <meshStandardMaterial color="#e5e5e5" />
-        </mesh>
-      </group>
-
-      {/* Wings Group */}
-      <group ref={wingsRef}>
-        <mesh position={[0.65, 0.1, 0]} rotation={[0, 0, -0.2]} castShadow>
-          <sphereGeometry args={[0.2, 32, 16]} scale={[1, 2.5, 1.5]} />
-          <meshStandardMaterial color="#f8fafc" roughness={0.6} />
-        </mesh>
-        <mesh position={[-0.65, 0.1, 0]} rotation={[0, 0, 0.2]} castShadow>
-          <sphereGeometry args={[0.2, 32, 16]} scale={[1, 2.5, 1.5]} />
-          <meshStandardMaterial color="#f8fafc" roughness={0.6} />
-        </mesh>
-      </group>
-
-      {/* Head Group */}
-      <group position={[0, 0.7, 0.3]}>
-        {/* Neck feather blending */}
-        <mesh position={[0, -0.2, -0.1]}>
-           <cylinderGeometry args={[0.3, 0.4, 0.4]} />
-           <meshStandardMaterial color="#ffffff" />
-        </mesh>
-
-        {/* Head */}
-        <mesh castShadow>
-          <sphereGeometry args={[0.35, 32, 32]} />
-          <meshStandardMaterial color="#ffffff" />
-        </mesh>
-        
-        {/* Eyes */}
-        <mesh position={[0.15, 0.1, 0.25]}>
-          <sphereGeometry args={[0.04, 16, 16]} />
-          <meshStandardMaterial color="black" roughness={0.2} />
-        </mesh>
-        <mesh position={[-0.15, 0.1, 0.25]}>
-          <sphereGeometry args={[0.04, 16, 16]} />
-          <meshStandardMaterial color="black" roughness={0.2} />
-        </mesh>
-
-        {/* Beak */}
-        <mesh position={[0, 0, 0.35]} rotation={[Math.PI/2, 0, 0]}>
-          <coneGeometry args={[0.08, 0.2, 32]} />
-          <meshStandardMaterial color="#fbbf24" />
-        </mesh>
-
-        {/* Comb (Red thing on top) */}
-        <group position={[0, 0.3, 0]}>
-            <mesh position={[0, 0, 0]}>
-                <sphereGeometry args={[0.08, 16, 16]} />
-                <meshStandardMaterial color="#ef4444" />
-            </mesh>
-            <mesh position={[0, 0.05, -0.12]}>
-                <sphereGeometry args={[0.07, 16, 16]} />
-                <meshStandardMaterial color="#ef4444" />
-            </mesh>
-            <mesh position={[0, -0.02, 0.12]}>
-                <sphereGeometry args={[0.06, 16, 16]} />
-                <meshStandardMaterial color="#ef4444" />
-            </mesh>
-        </group>
-
-        {/* Wattle (Red thing under beak) */}
-        <mesh position={[0, -0.15, 0.25]}>
-           <sphereGeometry args={[0.06, 16, 16]} />
-           <meshStandardMaterial color="#ef4444" />
-        </mesh>
-      </group>
-
-      {/* Legs */}
-      <group position={[0, -0.5, 0]}>
-         {/* Thighs */}
-         <mesh position={[0.25, 0.1, 0]}>
-            <sphereGeometry args={[0.2, 16, 16]} />
-            <meshStandardMaterial color="#ffffff" />
-         </mesh>
-         <mesh position={[-0.25, 0.1, 0]}>
-            <sphereGeometry args={[0.2, 16, 16]} />
-            <meshStandardMaterial color="#ffffff" />
-         </mesh>
-
-         {/* Sticks */}
-         <mesh position={[0.25, -0.2, 0]}>
-            <cylinderGeometry args={[0.04, 0.04, 0.6]} />
-            <meshStandardMaterial color="#fbbf24" />
-         </mesh>
-         <mesh position={[-0.25, -0.2, 0]}>
-            <cylinderGeometry args={[0.04, 0.04, 0.6]} />
-            <meshStandardMaterial color="#fbbf24" />
-         </mesh>
-         
-         {/* Feet */}
-         <mesh position={[0.25, -0.5, 0.1]} rotation={[Math.PI/2, 0, 0]}>
-             <boxGeometry args={[0.12, 0.3, 0.04]} />
-             <meshStandardMaterial color="#fbbf24" />
-         </mesh>
-         <mesh position={[-0.25, -0.5, 0.1]} rotation={[Math.PI/2, 0, 0]}>
-             <boxGeometry args={[0.12, 0.3, 0.04]} />
-             <meshStandardMaterial color="#fbbf24" />
-         </mesh>
-      </group>
-    </group>
-  );
-};
-
-const Egg3D = ({ visible }: { visible: boolean }) => {
-  const mesh = useRef<THREE.Mesh>(null);
-
-  useLayoutEffect(() => {
-    if (visible && mesh.current) {
-      gsap.fromTo(mesh.current.scale, 
-        { x: 0, y: 0, z: 0 }, 
-        { x: 1, y: 1, z: 1, duration: 0.4, ease: "elastic.out(1, 0.5)" }
-      );
-    }
-  }, [visible]);
-
-  if (!visible) return null;
-
-  return (
-    <mesh ref={mesh} position={[0, 0.6, 0]} castShadow receiveShadow>
-      {/* Egg Shape */}
-      <sphereGeometry args={[0.5, 32, 32]} />
-      {/* Slight stretch to make it egg-like */}
-      <meshStandardMaterial color="#fefce8" roughness={0.3} />
-    </mesh>
-  );
-};
-
-const Scene = ({ onComplete }: { onComplete: () => void }) => {
-  const [isFlying, setIsFlying] = useState(false);
-  const [eggVisible, setEggVisible] = useState(false);
-
-  const handleClick = () => {
-    if (isFlying) return;
-    setIsFlying(true);
-    sfx.cluck();
-    
-    // Time the egg appearance with the squat animation
-    setTimeout(() => {
-        setEggVisible(true);
-        sfx.pop();
-    }, 300);
-
-    // Complete stage after chicken flies away
-    setTimeout(() => {
-        onComplete();
-    }, 1500);
   };
 
   return (
-    <>
-      <PerspectiveCamera makeDefault position={[0, 2, 6]} />
-      <Sky sunPosition={[100, 20, 100]} turbidity={0.5} rayleigh={0.5} />
-      
-      {/* Lights - Replaced Environment with robust standard lights to prevent loading hangs */}
-      <ambientLight intensity={0.8} />
-      <hemisphereLight intensity={0.6} groundColor="#4ade80" color="#87ceeb" />
-      <directionalLight 
-        position={[10, 10, 5]} 
-        intensity={1.5} 
-        castShadow 
-        shadow-mapSize={[1024, 1024]} 
-      />
-      
-      <Float speed={2} rotationIntensity={0.1} floatIntensity={0.2}>
-        <Chicken3D onClick={handleClick} isFlying={isFlying} />
-      </Float>
-      
-      <Egg3D visible={eggVisible} />
+    <div ref={containerRef} className="h-full w-full bg-green-100 relative overflow-hidden cursor-crosshair">
+      <div className="absolute top-8 left-0 right-0 text-center pointer-events-none z-10">
+        <h2 className="text-3xl text-green-700 font-comic font-bold drop-shadow-sm bg-white/80 inline-block px-6 py-2 rounded-full">
+          Find the Chicken that lays the egg! 🥚
+        </h2>
+      </div>
 
-      {/* Floor */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
-        <planeGeometry args={[100, 100]} />
-        <meshStandardMaterial color="#4ade80" />
-      </mesh>
-      
-      <ContactShadows opacity={0.4} scale={10} blur={2} far={4} />
+      {chickens.map((c) => (
+        <div
+          key={c.id}
+          id={`chicken-${c.id}`}
+          onClick={() => c.status === 'idle' && handleChickenClick(c.id)}
+          className="absolute transform -translate-x-1/2 -translate-y-1/2 transition-transform hover:scale-110 cursor-pointer select-none"
+          style={{
+            left: `${c.x}%`,
+            top: `${c.y}%`,
+            zIndex: c.status === 'clicked' ? 0 : 10,
+            opacity: c.status === 'clicked' && c.surpriseType === 'ghost' ? 0 : 1,
+            transition: c.status === 'clicked' && c.surpriseType === 'ghost' ? 'opacity 1s ease-out' : ''
+          }}
+        >
+          {/* Main Graphic */}
+          <div className={`text-5xl ${c.status === 'clicked' && !c.isWinner ? 'grayscale opacity-50' : ''}`}>
+             {c.status === 'clicked' && c.surpriseType === 'roast' ? '🍗' : '🐔'}
+          </div>
 
-      {!isFlying && (
-        <Float position={[0, 3.5, 0]} speed={3} floatIntensity={0.5}>
-          <Text
-            font="https://fonts.gstatic.com/s/fredokaone/v13/k3kUo8kEI-tA1RRcTZGmTlHGCac.woff"
-            fontSize={0.5}
-            color="white"
-            outlineWidth={0.04}
-            outlineColor="#ec4899"
-          >
-            TAP ME!
-          </Text>
-        </Float>
-      )}
-    </>
-  );
-};
-
-const Landing: React.FC<LandingProps> = ({ onComplete }) => {
-  return (
-    <div className="h-full w-full bg-sky-300">
-      <Canvas shadows camera={{ position: [0, 2, 6], fov: 45 }}>
-        <Suspense fallback={<Html center><div className="text-white font-bold text-2xl animate-pulse">Loading...</div></Html>}>
-           <Scene onComplete={onComplete} />
-        </Suspense>
-      </Canvas>
+          {/* Feedback Messages/Effects */}
+          {c.status === 'clicked' && !c.isWinner && (
+            <div className="absolute top-[-20px] left-1/2 -translate-x-1/2 whitespace-nowrap bg-white border border-gray-300 rounded px-2 py-1 text-xs font-bold animate-[bounce_0.5s_ease-out]">
+              {c.surpriseType === 'joke' && c.msg}
+              {c.surpriseType === 'roast' && "Tasty!"}
+              {c.surpriseType === 'ghost' && "Boo!"}
+              {c.surpriseType === 'poof' && "Empty!"}
+            </div>
+          )}
+        </div>
+      ))}
     </div>
   );
 };
