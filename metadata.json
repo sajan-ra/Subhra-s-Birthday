@@ -1,0 +1,7 @@
+{
+  "name": "Birthday Surprise!",
+  "description": "A funny, interactive, multi-stage birthday surprise web application featuring a 3D cake, mini-games, and a chicken.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Birthday Surprise!</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+      body {
+        font-family: 'Comic Neue', cursive;
+        margin: 0;
+        overflow: hidden; /* Prevent scrolling during animations */
+        background-color: #fdf2f8; /* pink-50 */
+      }
+      h1, h2, h3, button {
+        font-family: 'Fredoka One', cursive;
+      }
+      .shake-screen {
+        animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+      }
+      @keyframes shake {
+        10%, 90% { transform: translate3d(-4px, 0, 0); }
+        20%, 80% { transform: translate3d(8px, 0, 0); }
+        30%, 50%, 70% { transform: translate3d(-16px, 0, 0); }
+        40%, 60% { transform: translate3d(16px, 0, 0); }
+      }
+      .cursor-knife {
+        cursor: crosshair;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.2.1/",
+    "react": "https://aistudiocdn.com/react@^19.2.1",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.1/",
+    "@react-three/fiber": "https://aistudiocdn.com/@react-three/fiber@^9.4.2",
+    "gsap": "https://aistudiocdn.com/gsap@^3.13.0",
+    "three": "https://aistudiocdn.com/three@^0.181.2",
+    "@react-three/drei": "https://aistudiocdn.com/@react-three/drei@^10.7.7",
+    "@react-three/cannon": "https://aistudiocdn.com/@react-three/cannon@^6.6.0",
+    "dom": "https://aistudiocdn.com/dom@^0.0.3"
+  }
+}
+</script>
+</head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
