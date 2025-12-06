@@ -1,6 +1,6 @@
 import React, { useRef, useState, useLayoutEffect, Suspense } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { Sky, ContactShadows, Float, Text, Environment, Html, PerspectiveCamera } from '@react-three/drei';
+import { Sky, ContactShadows, Float, Text, PerspectiveCamera, Html } from '@react-three/drei';
 import gsap from 'gsap';
 import * as THREE from 'three';
 import { sfx } from '../../services/audioService';
@@ -71,13 +71,13 @@ const Chicken3D = ({ onClick, isFlying }: { onClick: () => void, isFlying: boole
       {/* Body Main */}
       <mesh castShadow receiveShadow position={[0, 0, 0]}>
         <sphereGeometry args={[0.7, 32, 32]} />
-        <meshStandardMaterial color="#f0f0f0" roughness={0.9} />
+        <meshStandardMaterial color="#ffffff" roughness={0.5} />
       </mesh>
       
       {/* Chest puffs for realism */}
       <mesh position={[0, -0.2, 0.4]} rotation={[0.5, 0, 0]}>
         <sphereGeometry args={[0.4, 32, 32]} />
-        <meshStandardMaterial color="#f0f0f0" roughness={0.9} />
+        <meshStandardMaterial color="#ffffff" roughness={0.5} />
       </mesh>
 
       {/* Tail Feathers */}
@@ -92,11 +92,11 @@ const Chicken3D = ({ onClick, isFlying }: { onClick: () => void, isFlying: boole
       <group ref={wingsRef}>
         <mesh position={[0.65, 0.1, 0]} rotation={[0, 0, -0.2]} castShadow>
           <sphereGeometry args={[0.2, 32, 16]} scale={[1, 2.5, 1.5]} />
-          <meshStandardMaterial color="#ffffff" roughness={1} />
+          <meshStandardMaterial color="#f8fafc" roughness={0.6} />
         </mesh>
         <mesh position={[-0.65, 0.1, 0]} rotation={[0, 0, 0.2]} castShadow>
           <sphereGeometry args={[0.2, 32, 16]} scale={[1, 2.5, 1.5]} />
-          <meshStandardMaterial color="#ffffff" roughness={1} />
+          <meshStandardMaterial color="#f8fafc" roughness={0.6} />
         </mesh>
       </group>
 
@@ -105,13 +105,13 @@ const Chicken3D = ({ onClick, isFlying }: { onClick: () => void, isFlying: boole
         {/* Neck feather blending */}
         <mesh position={[0, -0.2, -0.1]}>
            <cylinderGeometry args={[0.3, 0.4, 0.4]} />
-           <meshStandardMaterial color="#f0f0f0" />
+           <meshStandardMaterial color="#ffffff" />
         </mesh>
 
         {/* Head */}
         <mesh castShadow>
           <sphereGeometry args={[0.35, 32, 32]} />
-          <meshStandardMaterial color="#f0f0f0" />
+          <meshStandardMaterial color="#ffffff" />
         </mesh>
         
         {/* Eyes */}
@@ -158,11 +158,11 @@ const Chicken3D = ({ onClick, isFlying }: { onClick: () => void, isFlying: boole
          {/* Thighs */}
          <mesh position={[0.25, 0.1, 0]}>
             <sphereGeometry args={[0.2, 16, 16]} />
-            <meshStandardMaterial color="#f0f0f0" />
+            <meshStandardMaterial color="#ffffff" />
          </mesh>
          <mesh position={[-0.25, 0.1, 0]}>
             <sphereGeometry args={[0.2, 16, 16]} />
-            <meshStandardMaterial color="#f0f0f0" />
+            <meshStandardMaterial color="#ffffff" />
          </mesh>
 
          {/* Sticks */}
@@ -238,9 +238,16 @@ const Scene = ({ onComplete }: { onComplete: () => void }) => {
     <>
       <PerspectiveCamera makeDefault position={[0, 2, 6]} />
       <Sky sunPosition={[100, 20, 100]} turbidity={0.5} rayleigh={0.5} />
-      <ambientLight intensity={0.7} />
-      <directionalLight position={[10, 10, 5]} intensity={1.5} castShadow shadow-mapSize={[1024, 1024]} />
-      <Environment preset="park" />
+      
+      {/* Lights - Replaced Environment with robust standard lights to prevent loading hangs */}
+      <ambientLight intensity={0.8} />
+      <hemisphereLight intensity={0.6} groundColor="#4ade80" color="#87ceeb" />
+      <directionalLight 
+        position={[10, 10, 5]} 
+        intensity={1.5} 
+        castShadow 
+        shadow-mapSize={[1024, 1024]} 
+      />
       
       <Float speed={2} rotationIntensity={0.1} floatIntensity={0.2}>
         <Chicken3D onClick={handleClick} isFlying={isFlying} />
@@ -277,7 +284,7 @@ const Landing: React.FC<LandingProps> = ({ onComplete }) => {
   return (
     <div className="h-full w-full bg-sky-300">
       <Canvas shadows camera={{ position: [0, 2, 6], fov: 45 }}>
-        <Suspense fallback={<Html center><div className="text-white font-bold text-2xl animate-pulse">Loading Chicken...</div></Html>}>
+        <Suspense fallback={<Html center><div className="text-white font-bold text-2xl animate-pulse">Loading...</div></Html>}>
            <Scene onComplete={onComplete} />
         </Suspense>
       </Canvas>

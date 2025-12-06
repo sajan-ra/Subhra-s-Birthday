@@ -6,20 +6,11 @@ import { Physics, useBox, usePlane } from '@react-three/cannon';
 import { sfx } from '../../services/audioService';
 import { Button } from '../Button';
 
-// Augment JSX namespace for Three.js elements
+// Augment JSX namespace for Three.js elements and all other elements to fix missing types
 declare global {
   namespace JSX {
     interface IntrinsicElements {
-      ambientLight: any;
-      pointLight: any;
-      spotLight: any;
-      mesh: any;
-      group: any;
-      boxGeometry: any;
-      cylinderGeometry: any;
-      sphereGeometry: any;
-      planeGeometry: any;
-      meshStandardMaterial: any;
+      [elemName: string]: any;
     }
   }
 }
@@ -74,7 +65,8 @@ const CakeSlice = ({
   index: number; 
   total: number; 
   onInteract: () => void; 
-  candlesBlown: boolean; 
+  candlesBlown: boolean;
+  key?: any; 
 }) => {
   const angleStep = (Math.PI * 2) / total;
   const angle = index * angleStep;
